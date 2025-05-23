@@ -317,7 +317,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 // 发送消息到服务器（保持原有的UTF-8发送方式）
                 char msg[256] = { 0 };
-                WideCharToMultiByte(CP_UTF8, 0, inputText, -1, msg, sizeof(msg), NULL, NULL);
+                WideCharToMultiByte(CP_ACP, 0, inputText, -1, msg, sizeof(msg), NULL, NULL);
                 SendChatMessage(msg);
 
                 // 清空输入框
@@ -437,7 +437,7 @@ INT_PTR CALLBACK handleLink(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 
             // 其余代码保持不变...
             char ipAddr[16] = { 0 };
-            WideCharToMultiByte(CP_UTF8, 0, ipAddrW, -1, ipAddr, 16, NULL, NULL);
+            WideCharToMultiByte(CP_ACP, 0, ipAddrW, -1, ipAddr, 16, NULL, NULL);
 
             // 验证输入
             if (port <= 0 || port > 65535) {
@@ -551,7 +551,7 @@ void AppendChatMessageFromChar(const char* msg)
     if (!msg) return;
 
     // 计算需要的缓冲区大小
-    int wlen = MultiByteToWideChar(CP_UTF8, 0, msg, -1, NULL, 0);
+    int wlen = MultiByteToWideChar(CP_ACP, 0, msg, -1, NULL, 0);
     if (wlen == 0) return;
 
     // 分配缓冲区
@@ -559,7 +559,7 @@ void AppendChatMessageFromChar(const char* msg)
     if (!wmsg) return;
 
     // 转换字符串
-    if (MultiByteToWideChar(CP_UTF8, 0, msg, -1, wmsg, wlen) > 0)
+    if (MultiByteToWideChar(CP_ACP, 0, msg, -1, wmsg, wlen) > 0)
     {
         // 构造显示文本
         wchar_t displayText[1024] = { 0 };
