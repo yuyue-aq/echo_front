@@ -27,9 +27,15 @@
     <ClInclude Include="WindowsProject4.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="cli_core.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject4.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="cli_core.c">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

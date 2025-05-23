@@ -1,7 +1,12 @@
 ﻿#include "framework.h"
 #include "WindowsProject4.h"
+#include "cli_core.h"
 #include <windowsx.h>
-#include<stdio.h>
+#include <stdio.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
+#pragma comment(lib, "ws2_32.lib")
 
 #define MAX_LOADSTRING 100
 #define IDC_MY_BUTTON 102 // 定义按钮ID
@@ -9,23 +14,105 @@
 #define IDC_CHAT_INPUT   1002  // 聊天输入框
 #define IDC_SEND_BUTTON  1003  // 发送按钮
 
+// 定义回调函数类型
+typedef int (*MessageCallback)(const char*);
+
 // 全局变量:
 HINSTANCE hInst;                                // 当前实例
 HWND hWndMain;                                  // 主窗口句柄（全局）
 BOOL g_bConnected = FALSE;                      // 连接状态（全局）
 WCHAR szTitle[MAX_LOADSTRING];                  // 标题栏文本
 WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
+MessageCallback g_messageCallback = NULL;       // 消息回调函数指针
+SERVER* g_server=NULL;                          // 服务器连接实例
 
 // 此代码模块中包含的函数的前向声明:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    Link(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK    divLink(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    handleLink(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Linksuccess(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Linkfail(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Linkfailhandle(HWND, UINT, WPARAM, LPARAM);
+void AppendChatMessage(const wchar_t* msg);
+void AppendChatMessageFromChar(const char* msg);
+
+// 设置消息回调函数
+void SetMessageCallback(MessageCallback callback)
+{
+    g_messageCallback = callback;
+}
+
+// 调用回调函数
+void CallMessageCallback(const char* msg)
+{
+    if (g_messageCallback && msg)
+    {
+        g_messageCallback(msg);
+    }
+}
+
+// 消息回调函数实现
+int OnMessageReceived(const char* msg, int len)
+{
+    if (msg && len > 0)
+    {
+        // 将接收到的消息显示在聊天框中
+        AppendChatMessageFromChar(msg);
+    }
+    return 0;
+}
+
+// 初始化网络
+BOOL InitializeNetwork()
+{
+    if (cli_core_init() != 0)
+    {
+        MessageBoxW(hWndMain, L"网络初始化失败", L"错误", MB_ICONERROR);
+        return FALSE;
+    }
+    return TRUE;
+}
+
+// 连接到服务器
+BOOL ConnectToServer(const char* ip, int port)
+{
+    int wsaerror = 0;
+    if (cli_core_login(ip, port, OnMessageReceived, &wsaerror) != 0)
+    {
+        MessageBoxW(hWndMain, L"连接服务器失败", L"错误", MB_ICONERROR);
+        return FALSE;
+    }
+    g_bConnected = TRUE;
+    return TRUE;
+}
+
+// 断开连接
+void DisconnectFromServer()
+{
+    if (g_bConnected)
+    {
+        cli_core_logout(g_server);
+        g_bConnected = FALSE;
+    }
+}
+
+// 发送消息
+BOOL SendChatMessage(const char* msg)
+{
+    if (!g_bConnected || !msg)
+        return FALSE;
+
+    // 调用新添加的 cli_core_send 接口
+    if (cli_core_send(g_server, msg, (int)strlen(msg)) != 0)
+    {
+        MessageBoxW(hWndMain, L"发送消息失败", L"错误", MB_ICONERROR);
+        return FALSE;
+    }
+    return TRUE;
+}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
@@ -85,7 +172,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_WINDOWSPROJECT4);
     wcex.lpszClassName = szWindowClass;
     wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-
     return RegisterClassExW(&wcex);
 }
 
@@ -97,6 +183,13 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
     hInst = hInstance; // 将实例句柄存储在全局变量中
+
+    // 初始化网络
+    if (cli_core_init())
+    {
+        MessageBoxW(hWndMain, L"网络初始化失败", L"错误", MB_ICONERROR);
+        return FALSE;
+    }
 
     // 设定窗口大小（宽度300，高度700）
     HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
@@ -167,17 +260,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // 主菜单点击逻辑（如需弹出子菜单需额外处理）
             break;
         case IDM_LINK_SUB1:
-            // 模拟连接逻辑（实际应调用真实连接函数）
-            // 模拟连接逻辑，设置连接状态
-            g_bConnected = FALSE; // 这里设置为连接失败，实际应调用真实连接函数
-
-            // 显示 Link 对话框，它会自动根据 g_bConnected 状态处理后续逻辑
-            DialogBox(hInst, MAKEINTRESOURCE(IDD_LINKBOX), hWndMain, Link);
+            DialogBox(hInst, MAKEINTRESOURCE(IDD_LINKBOX), hWndMain, divLink);
             break;
         case IDM_LINK_SUB2:
             DialogBox(hInst, MAKEINTRESOURCE(IDD_handlelinkbox), hWndMain, handleLink);
-            // 模拟第二个连接逻辑
-            g_bConnected = FALSE; // 0表示连接失败，1表示成功
             if (g_bConnected) {
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_connected), hWndMain, Linksuccess);
             }
@@ -209,7 +295,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     wcscat_s(newText, sizeof(newText) / sizeof(newText[0]), displayText);
                     wcscat_s(newText, sizeof(newText) / sizeof(newText[0]), L"\r\n");
                 }
-                wcscat_s(newText, sizeof(newText) / sizeof(newText[0]), L"You: ");
+                wcscat_s(newText, sizeof(newText) / sizeof(newText[0]), L"你: ");
                 wcscat_s(newText, sizeof(newText) / sizeof(newText[0]), inputText);
 
                 // 更新显示内容
@@ -217,6 +303,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 // 滚动到底部
                 SendMessageW(hDisplay, EM_LINESCROLL, 0, INT_MAX);
+
+                // 发送消息到服务器
+                char msg[256] = { 0 };
+                WideCharToMultiByte(CP_UTF8, 0, inputText, -1, msg, sizeof(msg), NULL, NULL);
+                SendChatMessage(msg);
 
                 // 清空输入框
                 SetWindowTextW(hInput, L"");
@@ -248,6 +339,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     break;
     case WM_DESTROY:
+        DisconnectFromServer();
+        cli_core_cleanup();
         PostQuitMessage(0);
         break;
     default:
@@ -256,7 +349,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-// “关于”框的消息处理程序。
+// "关于"框的消息处理程序。
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
@@ -276,34 +369,33 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 
-INT_PTR CALLBACK Link(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK divLink(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
-
+    
     switch (message)
     {
     case WM_INITDIALOG:
-        // 对话框初始化后立即检查连接状态
-        if (!g_bConnected) // 如果连接失败
-        {
-            // 关闭当前对话框
-            EndDialog(hDlg, IDCANCEL);
-
-            // 显示连接失败对话框
-            DialogBox(hInst, MAKEINTRESOURCE(IDD_failconnect), hWndMain, Linkfail);
-        }
-        else // 如果连接成功
-        {
-            // 可以选择显示连接成功对话框或执行其他操作
-            EndDialog(hDlg, IDOK);
-            DialogBox(hInst, MAKEINTRESOURCE(IDD_connected), hWndMain, Linksuccess);
-        }
         return (INT_PTR)TRUE;
 
     case WM_COMMAND:
-        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+        // 将 wmId 声明移到此处，扩大作用域
+        int wmId = LOWORD(wParam);
+        
+        if (wmId == IDC_OKDIV) // 处理"确定"按钮
         {
-            EndDialog(hDlg, LOWORD(wParam));
+            if (g_bConnected) // 检查连接状态
+            {
+                cli_core_logout(g_server); // 断开连接
+                g_bConnected = FALSE;       // 更新状态
+                MessageBoxW(hDlg, L"已成功断开连接。", L"提示", MB_OK);
+            }
+            EndDialog(hDlg, wmId);
+            return (INT_PTR)TRUE;
+        }
+        else if (wmId == IDCANCEL) // 处理"取消"按钮
+        {
+            EndDialog(hDlg, wmId);
             return (INT_PTR)TRUE;
         }
         break;
@@ -314,18 +406,55 @@ INT_PTR CALLBACK Link(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 // 其他对话框函数（保持不变）
 INT_PTR CALLBACK handleLink(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    UNREFERENCED_PARAMETER(lParam);
     switch (message)
     {
     case WM_INITDIALOG:
+        // 设置默认IP和端口（修正：使用小写 IDC_port）
+        SetDlgItemText(hDlg, IDC_IP_ADDR, L"127.0.0.1");
+        SetDlgItemInt(hDlg, IDC_port, 8080, FALSE);  // 小写 IDC_port
         return (INT_PTR)TRUE;
 
     case WM_COMMAND:
-        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+        if (LOWORD(wParam) == IDC_CONNECT)
         {
+            // 获取IP地址
+            wchar_t ipAddrW[16] = { 0 };
+            GetDlgItemTextW(hDlg, IDC_IP_ADDR, ipAddrW, 16);
+
+            // 获取端口（修正：使用小写 IDC_port）
+            int port = GetDlgItemInt(hDlg, IDC_port, NULL, FALSE);  // 小写 IDC_port
+
+            // 其余代码保持不变...
+            char ipAddr[16] = { 0 };
+            WideCharToMultiByte(CP_UTF8, 0, ipAddrW, -1, ipAddr, 16, NULL, NULL);
+
+            // 验证输入
+            if (port <= 0 || port > 65535) {
+                MessageBoxW(hDlg, L"无效的端口号", L"错误", MB_ICONERROR);
+                return (INT_PTR)TRUE;
+            }
+
+            int wsaError;
+            // 连接服务器
+            SERVER* serverPtr = cli_core_login(ipAddr, port, OnMessageReceived, &wsaError);
+            if (serverPtr == NULL) {
+                MessageBoxW(hDlg, L"连接服务器失败", L"错误", MB_ICONERROR);
+                return (INT_PTR)TRUE;
+            }
+
+            // 保存服务器指针到全局变量
+            g_server = serverPtr;
+            g_bConnected = TRUE;
+
+            // 显示连接成功对话框
+            EndDialog(hDlg, IDOK);
+            return (INT_PTR)TRUE;
+        }
+        if (LOWORD(wParam) == IDCANCEL) {
             EndDialog(hDlg, LOWORD(wParam));
             return (INT_PTR)TRUE;
         }
+
         break;
     }
     return (INT_PTR)FALSE;
@@ -386,4 +515,50 @@ INT_PTR CALLBACK Linkfailhandle(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
         break;
     }
     return (INT_PTR)FALSE;
+}
+
+void AppendChatMessage(const wchar_t* msg)
+{
+    HWND hDisplay = GetDlgItem(hWndMain, IDC_CHAT_DISPLAY);
+    if (!hDisplay || !msg) return;
+    wchar_t displayText[1024] = { 0 };
+    GetWindowTextW(hDisplay, displayText, 1024);
+    wchar_t newText[1024] = { 0 };
+    if (wcslen(displayText) > 0)
+    {
+        wcscat_s(newText, sizeof(newText) / sizeof(newText[0]), displayText);
+        wcscat_s(newText, sizeof(newText) / sizeof(newText[0]), L"\r\n");
+    }
+    wcscat_s(newText, sizeof(newText) / sizeof(newText[0]), msg);
+    SetWindowTextW(hDisplay, newText);
+    // 滚动到底部
+    SendMessageW(hDisplay, EM_LINESCROLL, 0, INT_MAX);
+}
+
+void AppendChatMessageFromChar(const char* msg)
+{
+    if (!msg) return;
+
+    // 计算需要的缓冲区大小
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, msg, -1, NULL, 0);
+    if (wlen == 0) return;
+
+    // 分配缓冲区
+    wchar_t* wmsg = (wchar_t*)malloc(wlen * sizeof(wchar_t));
+    if (!wmsg) return;
+
+    // 转换字符串
+    if (MultiByteToWideChar(CP_UTF8, 0, msg, -1, wmsg, wlen) > 0)
+    {
+        // 构造显示文本
+        wchar_t displayText[1024] = { 0 };
+        wcscat_s(displayText, sizeof(displayText) / sizeof(displayText[0]), L"对方: ");
+        wcscat_s(displayText, sizeof(displayText) / sizeof(displayText[0]), wmsg);
+
+        // 添加到聊天框
+        AppendChatMessage(displayText);
+    }
+
+    // 释放内存
+    free(wmsg);
 }
