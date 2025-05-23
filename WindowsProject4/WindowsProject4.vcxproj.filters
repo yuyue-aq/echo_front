@@ -30,12 +30,18 @@
     <ClInclude Include="cli_core.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="check_swearing.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject4.c">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="cli_core.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="check_swearing.c">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -131,6 +131,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="check_swearing.h" />
     <ClInclude Include="cli_core.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
@@ -138,6 +139,7 @@
     <ClInclude Include="WindowsProject4.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="check_swearing.c" />
     <ClCompile Include="cli_core.c" />
     <ClCompile Include="WindowsProject4.c" />
   </ItemGroup>

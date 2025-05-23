@@ -283,6 +283,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             if (wcslen(inputText) > 0)
             {
+                // 将宽字符转换为GBK字节字符串用于检测
+                char msgGbk[1024] = { 0 };
+                int len = WideCharToMultiByte(CP_ACP, 0, inputText, -1, msgGbk, sizeof(msgGbk), NULL, NULL);
+
+                // 检测是否包含脏话
+                if (detect_swear_words(msgGbk)) {
+                    MessageBoxW(hWndMain, L"消息包含脏话，发送被拒绝", L"警告", MB_ICONWARNING);
+                    SetWindowTextW(hInput, L""); // 清空输入框
+                    break;
+                }
+
                 // 获取当前显示内容
                 wchar_t displayText[1024] = { 0 };
                 HWND hDisplay = GetDlgItem(hWndMain, IDC_CHAT_DISPLAY);
@@ -304,7 +315,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 // 滚动到底部
                 SendMessageW(hDisplay, EM_LINESCROLL, 0, INT_MAX);
 
-                // 发送消息到服务器
+                // 发送消息到服务器（保持原有的UTF-8发送方式）
                 char msg[256] = { 0 };
                 WideCharToMultiByte(CP_UTF8, 0, inputText, -1, msg, sizeof(msg), NULL, NULL);
                 SendChatMessage(msg);
