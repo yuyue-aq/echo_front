@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include "check_swearing.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -306,7 +307,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     wcscat_s(newText, sizeof(newText) / sizeof(newText[0]), displayText);
                     wcscat_s(newText, sizeof(newText) / sizeof(newText[0]), L"\r\n");
                 }
-                wcscat_s(newText, sizeof(newText) / sizeof(newText[0]), L"你: ");
+                wcscat_s(newText, sizeof(newText) / sizeof(newText[0]), L"你:     ");
                 wcscat_s(newText, sizeof(newText) / sizeof(newText[0]), inputText);
 
                 // 更新显示内容
@@ -563,7 +564,7 @@ void AppendChatMessageFromChar(const char* msg)
     {
         // 构造显示文本
         wchar_t displayText[1024] = { 0 };
-        wcscat_s(displayText, sizeof(displayText) / sizeof(displayText[0]), L"对方: ");
+        wcscat_s(displayText, sizeof(displayText) / sizeof(displayText[0]), L"对方:    ");
         wcscat_s(displayText, sizeof(displayText) / sizeof(displayText[0]), wmsg);
 
         // 添加到聊天框
