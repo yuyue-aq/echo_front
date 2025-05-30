@@ -22,8 +22,9 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{e6dcffe6-a4ee-4f6c-9ef1-8428b367dfba}</ProjectGuid>
-    <RootNamespace>WindowsProject4</RootNamespace>
+    <RootNamespace>chat</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>chat</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -137,19 +138,19 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="WindowsProject4.h" />
+    <ClInclude Include="chat.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="check_swearing.c" />
     <ClCompile Include="cli_core.c" />
-    <ClCompile Include="WindowsProject4.c" />
+    <ClCompile Include="chat.c" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="WindowsProject4.rc" />
+    <ResourceCompile Include="chat.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="small.ico" />
-    <Image Include="WindowsProject4.ico" />
+    <Image Include="chat.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -24,7 +24,7 @@
     <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="WindowsProject4.h">
+    <ClInclude Include="chat.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="cli_core.h">
@@ -35,7 +35,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="WindowsProject4.c">
+    <ClCompile Include="chat.c">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="cli_core.c">
@@ -46,7 +46,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="WindowsProject4.rc">
+    <ResourceCompile Include="chat.rc">
       <Filter>资源文件</Filter>
     </ResourceCompile>
   </ItemGroup>
@@ -54,7 +54,7 @@
     <Image Include="small.ico">
       <Filter>资源文件</Filter>
     </Image>
-    <Image Include="WindowsProject4.ico">
+    <Image Include="chat.ico">
       <Filter>资源文件</Filter>
     </Image>
   </ItemGroup>
